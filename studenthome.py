@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 # Updated student and admin credentials
 student_credentials = {"user1": "user1"}
@@ -43,13 +44,30 @@ def admin_login():
             st.error("Invalid username or password")
 
 def view_attendance():
-    # Dummy data for demonstration
-    attendance_data = {
-        "Class": ["Math", "Physics", "Chemistry"],
-        "Attendance": ["Present", "Absent", "Present"]
-    }
-    st.title("Attendance Dashboard")
-    st.write(attendance_data)
+    # Display form to input attendance data
+    st.subheader("Enter Attendance Data")
+    student_name = st.text_input("Student Name")
+    roll_id = st.text_input("Roll ID")
+    subject = st.selectbox("Subject", ["Math", "Physics", "Chemistry"])
+    day = st.selectbox("Day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+    time = st.text_input("Time")
+    attendance_status = st.selectbox("Attendance Status", ["Present", "Absent"])
+
+    if st.button("Submit"):
+        # Append data to dataframe and export to Excel
+        data = {"Student Name": [student_name],
+                "Roll ID": [roll_id],
+                "Subject": [subject],
+                "Day": [day],
+                "Time": [time],
+                "Attendance": [attendance_status]}
+        df = pd.DataFrame(data)
+        export_to_excel(df)
+
+def export_to_excel(df):
+    # Export dataframe to Excel
+    df.to_excel("attendance_data.xlsx", index=False)
+    st.success("Attendance data exported to Excel!")
 
 def main():
     st.title("Student Attendance System")
