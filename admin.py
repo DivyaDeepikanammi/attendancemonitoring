@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
-title = st.text_input('Name', ' ')
 
+title = st.text_input('Name', ' ')
 attendance_marked = False
 
 if st.button("Mark Attendance", type="primary"):
@@ -15,11 +15,8 @@ if st.button('Click Attendance'):
     else:
         st.write("Please click 'Mark Attendance' to register")
 
-# Connect to Google Sheet (assuming you need it)
-from streamlit_gsheets import GSheetsConnection
-
 # Create a connection object.
-conn = st.connection("gsheets", type=GSheetsConnection)
+conn = st.gsheets_connection()
 
 # Example: Read specific data from the sheet
 if attendance_marked:
@@ -29,4 +26,4 @@ if attendance_marked:
         nrows=1,  # Read only the first row
     )
     for row in df.itertuples():
-        st.write(f"{row.name} has a :{row.pet}:")
+        st.write(f"{row.name} has a {row.pet}")
