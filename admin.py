@@ -1,59 +1,53 @@
 import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
 
-# Sample student and admin credentials (for demonstration)
-student_credentials = {"student1": "password1", "student2": "password2"}
-admin_credentials = {"admin": "adminpass"}
+# Google Sheets API credentials
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('path/to/your/credentials.json', scope)
+client = gspread.authorize(creds)
 
-def student_login():
-    st.subheader("Student Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username in student_credentials and student_credentials[username] == password:
-            return True
-        else:
-            st.error("Invalid username or password")
-            return False
+# Open the Google Sheets document
+sheet = client.open('Attendance Sheet').sheet1  # Replace 'Attendance Sheet' with your actual sheet name
 
-def admin_login():
-    st.subheader("Admin Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username in admin_credentials and admin_credentials[username] == password:
-            return True
-        else:
-            st.error("Invalid username or password")
-            return False
+def mark_attendance_to_google_sheets(student_id, class_id, date):
+    # Function to mark attendance in Google Sheets
+    sheet.append_row([date, student_id, class_id, 'Present'])
 
-def mark_attendance(class_name):
-    if st.button("Mark Attendance"):
-        # Implement attendance marking logic here
-        st.success(f"Attendance marked for {class_name}")
-
-def view_attendance():
-    # Dummy data for demonstration
-    attendance_data = {
-        "Class": ["Math", "Physics", "Chemistry"],
-        "Attendance": ["Present", "Absent", "Present"]
-    }
-    st.subheader("Attendance Dashboard")
-    st.write(attendance_data)
+def get_attendance_data():
+    # Function to retrieve attendance data from Google Sheets
+    data = sheet.get_all_values()
+    df = pd.DataFrame(data[1:], columns=data[0])
+    return df
 
 def main():
-    st.title("Student Attendance System")
+    st.title('Attendance Management System')
 
-    # Authentication
-    if st.sidebar.radio("Login", ("Student", "Admin")) == "Student":
-        if student_login():
-            st.sidebar.success("Logged in as Student")
-            class_name = st.selectbox("Select Class", ["Math", "Physics", "Chemistry"])
-            mark_attendance(class_name)
-    else:
-        if admin_login():
-            st.sidebar.success("Logged in as Admin")
-            view_attendance()
+    # Login Section
+    username = st.text_input('Username')
+    password = st.text_input('Password', type='password')
+    login_button = st.button('Login')
+
+    if login_button:
+        # Authenticate user, check credentials, and proceed if valid
+        pass
+
+    # Attendance Marking Section
+    if authenticated:
+        st.subheader('Mark Attendance')
+        class_id = st.selectbox('Select Class', ['Math', 'Physics', 'Chemistry'])
+        today = pd.Timestamp.now().strftime('%Y-%m-%d')
+        mark_button = st.button('Mark Attendance')
+
+        if mark_button:
+            mark_attendance_to_google_sheets(username, class_id, today)
+            st.success('Attendance marked successfully!')
+
+    # Attendance Dashboard Section
+    st.subheader('Attendance Dashboard')
+    attendance_df = get_attendance_data()
+    st.write(attendance_df)
 
 if __name__ == "__main__":
     main()
-
