@@ -1,7 +1,7 @@
 import streamlit as st
-import pandas as pd
-from google.oauth2 import service_account
 import gspread
+from google.oauth2 import service_account
+import pandas as pd
 
 # Load Google Sheets credentials
 credentials = service_account.Credentials.from_service_account_info(
@@ -13,22 +13,24 @@ def authenticate_google_sheets():
     gc = gspread.authorize(credentials)
     return gc
 
-# Function to get subjects based on student's year from Google Sheets
-def get_subjects(year):
-    gc = authenticate_google_sheets()
-    sheet = gc.open_by_key("your_sheet_key")  # Replace with your Google Sheet key
-    worksheet = sheet.get_worksheet(year)  # Assuming each year has a separate worksheet
-    subjects = worksheet.row_values(1)  # Assuming subjects are listed in the first row
-    return subjects
-
 # Function to mark attendance in Google Sheets
-def mark_attendance(student_name, subject, attended):
+def mark_attendance(student_name, year, subject, attended):
     gc = authenticate_google_sheets()
-    sheet = gc.open_by_key("your_sheet_key")  # Replace with your Google Sheet key
+    sheet = gc.open_by_key("1q7jJEbUj47fJ9oEQnPxrf61QVYlsmKBzaAeJnRXjfuo")  # Replace with your Google Sheet key
     worksheet = sheet.worksheet("Attendance")  # Assuming attendance data is in a worksheet named "Attendance"
-    # Find the row corresponding to the student and update attendance for the subject
-    # This depends on how your Google Sheet is structured
-    # Update the appropriate cell with attendance status (attended or not attended)
+    student_records = worksheet.get_all_records()
+
+    # Iterate through each record and find the matching record to update attendance
+    for index, record in enumerate(student_records, start=2):  # Assuming data starts from row 2
+        if (record['Student Name'] == student_name and
+            record['Year'] == year and
+            record['Subject'] == subject):
+            worksheet.update_cell(index, student_records[0].index('Attended') + 1, attended)
+            st.success("Attendance marked successfully!")
+            return
+
+    # If no matching record is found
+    st.error("Student record not found or attendance not marked.")
 
 # Student login function
 def student_login():
@@ -50,6 +52,9 @@ def main():
     # Once logged in, display subjects based on the student's year
     # Allow students to mark attendance
     # Update Google Sheet with attendance data
+
+    # Sample usage of the mark_attendance() function
+    mark_attendance("John Doe", 1, "Mathematics", "Yes")
 
 if __name__ == "__main__":
     main()
