@@ -1,53 +1,58 @@
-import openpyxl
-from openpyxl import Workbook
-from openpyxl.utils import get_column_letter
-from datetime import datetime
+import streamlit as st
 
-# Function to create or load Excel workbook and worksheets
-def setup_excel():
-    try:
-        # Load existing workbook if it exists
-        wb = openpyxl.load_workbook('attendance.xlsx')
-    except FileNotFoundError:
-        # Create a new workbook if it doesn't exist
-        wb = Workbook()
-        wb.save('attendance.xlsx')
-    
-    # Create or load worksheets for users and attendance
-    if 'users' not in wb.sheetnames:
-        wb.create_sheet('users')
-        users_ws = wb['users']
-        users_ws.append(['Username', 'Password', 'Role'])
+# Sample student and admin credentials (for demonstration)
+student_credentials = {"student1": "password1", "student2": "password2"}
+admin_credentials = {"admin": "adminpass"}
+
+def student_login():
+    st.subheader("Student Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if username in student_credentials and student_credentials[username] == password:
+            return True
+        else:
+            st.error("Invalid username or password")
+            return False
+
+def admin_login():
+    st.subheader("Admin Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if username in admin_credentials and admin_credentials[username] == password:
+            return True
+        else:
+            st.error("Invalid username or password")
+            return False
+
+def mark_attendance(class_name):
+    if st.button("Mark Attendance"):
+        # Implement attendance marking logic here
+        st.success(f"Attendance marked for {class_name}")
+
+def view_attendance():
+    # Dummy data for demonstration
+    attendance_data = {
+        "Class": ["Math", "Physics", "Chemistry"],
+        "Attendance": ["Present", "Absent", "Present"]
+    }
+    st.subheader("Attendance Dashboard")
+    st.write(attendance_data)
+
+def main():
+    st.title("Student Attendance System")
+
+    # Authentication
+    if st.sidebar.radio("Login", ("Student", "Admin")) == "Student":
+        if student_login():
+            st.sidebar.success("Logged in as Student")
+            class_name = st.selectbox("Select Class", ["Math", "Physics", "Chemistry"])
+            mark_attendance(class_name)
     else:
-        users_ws = wb['users']
-        
-    if 'attendance' not in wb.sheetnames:
-        wb.create_sheet('attendance')
-        attendance_ws = wb['attendance']
-        attendance_ws.append(['Username', 'Subject', 'Date'])
-    else:
-        attendance_ws = wb['attendance']
-    
-    return wb, users_ws, attendance_ws
+        if admin_login():
+            st.sidebar.success("Logged in as Admin")
+            view_attendance()
 
-# Function to add a new user
-def add_user(username, password, role, users_ws):
-    users_ws.append([username, password, role])
-
-# Function to check credentials
-def authenticate(username, password, users_ws):
-    for row in users_ws.iter_rows(min_row=2, values_only=True):
-        if row[0] == username and row[1] == password:
-            return row
-    return None
-
-# Function to mark attendance
-def mark_attendance(username, subject, attendance_ws):
-    date = datetime.now().strftime("%Y-%m-%d")
-    attendance_ws.append([username, subject, date])
-
-# Function to retrieve attendance
-def get_attendance(attendance_ws):
-    return attendance_ws.values
-
-# Streamlit UI and other parts of the code remain the same
+if __name__ == "__main__":
+    main()
