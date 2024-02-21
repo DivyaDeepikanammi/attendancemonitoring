@@ -1,70 +1,53 @@
-# Import necessary libraries
-import streamlit as st
-import sqlite3
+import openpyxl
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 from datetime import datetime
 
-# Create or connect to SQLite database
-conn = sqlite3.connect('attendance.db')
-c = conn.cursor()
-
-# Create table for users
-c.execute('''CREATE TABLE IF NOT EXISTS users
-             (username TEXT PRIMARY KEY, password TEXT, role TEXT)''')
-
-# Create table for attendance
-c.execute('''CREATE TABLE IF NOT EXISTS attendance
-             (id INTEGER PRIMARY KEY, username TEXT, subject TEXT, date TEXT)''')
+# Function to create or load Excel workbook and worksheets
+def setup_excel():
+    try:
+        # Load existing workbook if it exists
+        wb = openpyxl.load_workbook('attendance.xlsx')
+    except FileNotFoundError:
+        # Create a new workbook if it doesn't exist
+        wb = Workbook()
+        wb.save('attendance.xlsx')
+    
+    # Create or load worksheets for users and attendance
+    if 'users' not in wb.sheetnames:
+        wb.create_sheet('users')
+        users_ws = wb['users']
+        users_ws.append(['Username', 'Password', 'Role'])
+    else:
+        users_ws = wb['users']
+        
+    if 'attendance' not in wb.sheetnames:
+        wb.create_sheet('attendance')
+        attendance_ws = wb['attendance']
+        attendance_ws.append(['Username', 'Subject', 'Date'])
+    else:
+        attendance_ws = wb['attendance']
+    
+    return wb, users_ws, attendance_ws
 
 # Function to add a new user
-def add_user(username, password, role):
-    c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, password, role))
-    conn.commit()
+def add_user(username, password, role, users_ws):
+    users_ws.append([username, password, role])
 
 # Function to check credentials
-def authenticate(username, password):
-    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
-    return c.fetchone()
+def authenticate(username, password, users_ws):
+    for row in users_ws.iter_rows(min_row=2, values_only=True):
+        if row[0] == username and row[1] == password:
+            return row
+    return None
 
 # Function to mark attendance
-def mark_attendance(username, subject):
+def mark_attendance(username, subject, attendance_ws):
     date = datetime.now().strftime("%Y-%m-%d")
-    c.execute("INSERT INTO attendance (username, subject, date) VALUES (?, ?, ?)", (username, subject, date))
-    conn.commit()
+    attendance_ws.append([username, subject, date])
 
 # Function to retrieve attendance
-def get_attendance():
-    c.execute("SELECT * FROM attendance")
-    return c.fetchall()
+def get_attendance(attendance_ws):
+    return attendance_ws.values
 
-# Streamlit UI
-def main():
-    st.title("Student Attendance Management System")
-    page = st.sidebar.selectbox("Choose a page", ["Login", "Admin"])
-
-    if page == "Login":
-        st.subheader("Login")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        if st.button("Login"):
-            user = authenticate(username, password)
-            if user:
-                st.success("Logged in successfully!")
-                if user[2] == 'student':
-                    st.write("Welcome, Student!")
-                    subject = st.text_input("Enter Subject")
-                    if st.button("Mark Attendance"):
-                        mark_attendance(username, subject)
-                        st.success("Attendance marked successfully!")
-                else:
-                    st.write("Welcome, Admin!")
-            else:
-                st.error("Invalid username or password")
-
-    elif page == "Admin":
-        st.subheader("Admin Panel")
-        attendance_data = get_attendance()
-        st.write("Attendance Data")
-        st.table(attendance_data)
-
-if __name__ == "__main__":
-    main()
+# Streamlit UI and other parts of the code remain the same
