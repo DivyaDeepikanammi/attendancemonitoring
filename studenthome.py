@@ -1,14 +1,13 @@
 import streamlit as st
 
-# Sample data - Replace this with actual data retrieval logic
+# Sample function to fetch student data based on ID - Replace this with actual data retrieval logic
 def get_student_data(student_id):
     # Dummy data for demonstration
-    student_data = {
-        "name": "John Doe",
-        "year": "2nd Year",
-        "subjects": ["Mathematics", "Physics", "Chemistry"]
+    students = {
+        "12345": {"name": "John Doe", "year": "2nd Year", "subjects": ["Mathematics", "Physics", "Chemistry"]},
+        "67890": {"name": "Jane Smith", "year": "1st Year", "subjects": ["Biology", "History", "English"]}
     }
-    return student_data
+    return students.get(student_id)
 
 # Function for student login
 def student_login():
