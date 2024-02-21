@@ -1,74 +1,41 @@
 import streamlit as st
 import pandas as pd
+from google.oauth2 import service_account
+import gspread
 
-# Updated student and admin credentials
-student_credentials = {"user1": "user1"}
-admin_credentials = {"admin": "admin"}
+# Load Google Sheets credentials
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"]
+)
 
+# Function to authenticate with Google Sheets
+def authenticate_google_sheets():
+    gc = gspread.authorize(credentials)
+    return gc
+
+# Function to get subjects based on student's year from Google Sheets
+def get_subjects(year):
+    gc = authenticate_google_sheets()
+    sheet = gc.open_by_key("your_sheet_key")  # Replace with your Google Sheet key
+    worksheet = sheet.get_worksheet(year)  # Assuming each year has a separate worksheet
+    subjects = worksheet.row_values(1)  # Assuming subjects are listed in the first row
+    return subjects
+
+# Function to mark attendance in Google Sheets
+def mark_attendance(student_name, subject, attended):
+    gc = authenticate_google_sheets()
+    sheet = gc.open_by_key("your_sheet_key")  # Replace with your Google Sheet key
+    worksheet = sheet.worksheet("Attendance")  # Assuming attendance data is in a worksheet named "Attendance"
+    # Find the row corresponding to the student and update attendance for the subject
+    # This depends on how your Google Sheet is structured
+    # Update the appropriate cell with attendance status (attended or not attended)
+
+# Student login function
 def student_login():
-    st.subheader("Student Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username in student_credentials and student_credentials[username] == password:
-            st.success("Logged in successfully!")
-            st.sidebar.success("Logged in as Student")
-            student_dashboard(username)  # Redirect to student dashboard
-        else:
-            st.error("Invalid username or password")
+    # Implement student login logic here
+    pass
 
-def student_dashboard(username):
-    st.title("Student Dashboard")
-    st.write(f"Welcome, {username}!")
-
-    # Display subjects
-    st.subheader("Your Subjects:")
-    subjects = ["Math", "Physics", "Chemistry"]  # Example subjects, you can replace with your own
-    selected_subject = st.selectbox("Select Subject", subjects)
-
-    # Button to mark attendance
-    if st.button("Mark Attendance"):
-        # Logic to mark attendance for the selected subject
-        st.success(f"Attendance marked for {selected_subject}")
-
-def admin_login():
-    st.subheader("Admin Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username in admin_credentials and admin_credentials[username] == password:
-            st.success("Logged in successfully!")
-            st.sidebar.success("Logged in as Admin")
-            view_attendance()  # Redirect to admin view attendance page
-        else:
-            st.error("Invalid username or password")
-
-def view_attendance():
-    # Display form to input attendance data
-    st.subheader("Enter Attendance Data")
-    student_name = st.text_input("Student Name")
-    roll_id = st.text_input("Roll ID")
-    subject = st.selectbox("Subject", ["Math", "Physics", "Chemistry"])
-    day = st.selectbox("Day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-    time = st.text_input("Time")
-    attendance_status = st.selectbox("Attendance Status", ["Present", "Absent"])
-
-    if st.button("Submit"):
-        # Append data to dataframe and export to Excel
-        data = {"Student Name": [student_name],
-                "Roll ID": [roll_id],
-                "Subject": [subject],
-                "Day": [day],
-                "Time": [time],
-                "Attendance": [attendance_status]}
-        df = pd.DataFrame(data)
-        export_to_excel(df)
-
-def export_to_excel(df):
-    # Export dataframe to Excel
-    df.to_excel("attendance_data.xlsx", index=False)
-    st.success("Attendance data exported to Excel!")
-
+# Main function
 def main():
     st.title("Student Attendance System")
 
@@ -77,7 +44,12 @@ def main():
     if login_option == "Student":
         student_login()
     else:
-        admin_login()
+        # Implement admin login logic
+        pass
+
+    # Once logged in, display subjects based on the student's year
+    # Allow students to mark attendance
+    # Update Google Sheet with attendance data
 
 if __name__ == "__main__":
     main()
