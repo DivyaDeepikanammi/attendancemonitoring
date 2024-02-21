@@ -1,53 +1,70 @@
+# Import necessary libraries
 import streamlit as st
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import pandas as pd
+import sqlite3
+from datetime import datetime
 
-# Google Sheets API credentials
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('path/to/your/credentials.json', scope)
-client = gspread.authorize(creds)
+# Create or connect to SQLite database
+conn = sqlite3.connect('attendance.db')
+c = conn.cursor()
 
-# Open the Google Sheets document
-sheet = client.open('Attendance Sheet').sheet1  # Replace 'Attendance Sheet' with your actual sheet name
+# Create table for users
+c.execute('''CREATE TABLE IF NOT EXISTS users
+             (username TEXT PRIMARY KEY, password TEXT, role TEXT)''')
 
-def mark_attendance_to_google_sheets(student_id, class_id, date):
-    # Function to mark attendance in Google Sheets
-    sheet.append_row([date, student_id, class_id, 'Present'])
+# Create table for attendance
+c.execute('''CREATE TABLE IF NOT EXISTS attendance
+             (id INTEGER PRIMARY KEY, username TEXT, subject TEXT, date TEXT)''')
 
-def get_attendance_data():
-    # Function to retrieve attendance data from Google Sheets
-    data = sheet.get_all_values()
-    df = pd.DataFrame(data[1:], columns=data[0])
-    return df
+# Function to add a new user
+def add_user(username, password, role):
+    c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, password, role))
+    conn.commit()
 
+# Function to check credentials
+def authenticate(username, password):
+    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+    return c.fetchone()
+
+# Function to mark attendance
+def mark_attendance(username, subject):
+    date = datetime.now().strftime("%Y-%m-%d")
+    c.execute("INSERT INTO attendance (username, subject, date) VALUES (?, ?, ?)", (username, subject, date))
+    conn.commit()
+
+# Function to retrieve attendance
+def get_attendance():
+    c.execute("SELECT * FROM attendance")
+    return c.fetchall()
+
+# Streamlit UI
 def main():
-    st.title('Attendance Management System')
+    st.title("Student Attendance Management System")
+    page = st.sidebar.selectbox("Choose a page", ["Login", "Admin"])
 
-    # Login Section
-    username = st.text_input('Username')
-    password = st.text_input('Password', type='password')
-    login_button = st.button('Login')
+    if page == "Login":
+        st.subheader("Login")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            user = authenticate(username, password)
+            if user:
+                st.success("Logged in successfully!")
+                if user[2] == 'student':
+                    st.write("Welcome, Student!")
+                    subject = st.text_input("Enter Subject")
+                    if st.button("Mark Attendance"):
+                        mark_attendance(username, subject)
+                        st.success("Attendance marked successfully!")
+                else:
+                    st.write("Welcome, Admin!")
+            else:
+                st.error("Invalid username or password")
 
-    if login_button:
-        # Authenticate user, check credentials, and proceed if valid
-        pass
-
-    # Attendance Marking Section
-    if authenticated:
-        st.subheader('Mark Attendance')
-        class_id = st.selectbox('Select Class', ['Math', 'Physics', 'Chemistry'])
-        today = pd.Timestamp.now().strftime('%Y-%m-%d')
-        mark_button = st.button('Mark Attendance')
-
-        if mark_button:
-            mark_attendance_to_google_sheets(username, class_id, today)
-            st.success('Attendance marked successfully!')
-
-    # Attendance Dashboard Section
-    st.subheader('Attendance Dashboard')
-    attendance_df = get_attendance_data()
-    st.write(attendance_df)
+    elif page == "Admin":
+        st.subheader("Admin Panel")
+        attendance_data = get_attendance()
+        st.write("Attendance Data")
+        st.table(attendance_data)
 
 if __name__ == "__main__":
     main()
